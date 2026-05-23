@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "com.unity.xr.management": "4.5.0",
+    "com.unity.xr.arfoundation": "6.4.1",
+    "com.nianticspatial.nsdk": "https://github.com/nianticspatial/nsdk-library-upm.git",
+    "com.unity.modules.androidjni": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.ugui": "2.0.0"
+  }
+}

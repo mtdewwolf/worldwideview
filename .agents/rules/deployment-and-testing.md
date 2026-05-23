@@ -46,7 +46,7 @@ Frontend runs at `http://localhost:3000`.
 - **Coverage**: `src/lib/**`, `src/core/**`, `src/plugins/**`
 - **Run**: `pnpm test` (or `vitest run`)
 - **Type-Level Contract Testing**: When defining shared TypeScript interfaces/contracts (e.g., in `wwv-plugin-sdk`), you MUST use `expectTypeOf` from `vitest` to assert the actual contract shapes at compile-time instead of writing literal-value identity runtime assertions. You must also enforce `@ts-expect-error` negative type tests to ensure missing or invalid fields trigger compilation errors.
-- **Key test files**: `rateLimit.test.ts`, `edition.test.ts`, `demoAdmin.test.ts`, `DeclarativePlugin.test.ts`, `cors.test.ts`, `repository.test.ts`, `marketplaceToken.test.ts`
+- **Key test files**: `rateLimit.test.ts`, `edition.test.ts`, `demoAdmin.test.ts`, `loadPluginFromManifest.test.ts`, `cors.test.ts`, `repository.test.ts`, `marketplaceToken.test.ts`
 
 ### E2E Testing (Playwright)
 

@@ -124,3 +124,14 @@ export function ticketAuthEnabledForPlugin(pluginId: string): boolean {
 export function isDemoAdmin(session: any): boolean {
     return isDemo && session?.user?.role === DEMO_ADMIN_ROLE;
 }
+
+// ---------------------------------------------------------------------------
+// Niantic Spatial (server-side API key — not NEXT_PUBLIC_)
+// ---------------------------------------------------------------------------
+
+/**
+ * Niantic VPS/mesh features: local & cloud only, requires NIANTIC_SPATIAL_API_KEY.
+ * Client UI should prefer GET /api/niantic/status for gating.
+ */
+export const isNianticSpatialEnabled: boolean =
+    (isLocal || isCloud) && !!process.env.NIANTIC_SPATIAL_API_KEY?.trim();

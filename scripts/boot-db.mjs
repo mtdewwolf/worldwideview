@@ -61,36 +61,51 @@ if (folderName !== 'worldwideview') {
 process.env.WWV_DB_PORT = port.toString();
 console.log(`🔌 Assigned deterministic database port: ${port}`);
 
-// Robust rewrite of DATABASE_URL in .env
+const targetUrl = `postgresql://postgres:postgres@127.0.0.1:${port}/worldwideview?schema=public`;
+const targetUrlLine = `DATABASE_URL="${targetUrl}"`;
+const targetPortLine = `WWV_DB_PORT=${port}`;
+process.env.DATABASE_URL = targetUrl;
+
+// Keep DATABASE_URL and WWV_DB_PORT aligned in .env for Docker Compose + Prisma.
 const envPath = path.resolve(cwd, '.env');
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf8');
   const lines = envContent.split(/\r?\n/);
-  
-  const targetUrl = `DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:${port}/worldwideview?schema=public"`;
-  let foundTargetActive = false;
+
+  let foundTargetUrl = false;
+  let foundTargetPort = false;
   let linesModified = false;
-  
-  const newLines = lines.map(line => {
-    // Check if line is an active DATABASE_URL
+
+  const newLines = lines.map((line) => {
     if (/^\s*DATABASE_URL\s*=/.test(line)) {
-      if (line.trim() === targetUrl) {
-        foundTargetActive = true;
+      if (line.trim() === targetUrlLine) {
+        foundTargetUrl = true;
         return line;
-      } else {
-        console.warn(`⚠️  [Telemetry] Commenting out conflicting DATABASE_URL: ${line.trim()}`);
-        linesModified = true;
-        return `# ${line}`;
       }
+      console.warn(`⚠️  [Telemetry] Commenting out conflicting DATABASE_URL: ${line.trim()}`);
+      linesModified = true;
+      return `# ${line}`;
     }
+
+    if (/^\s*WWV_DB_PORT\s*=/.test(line)) {
+      if (line.trim() === targetPortLine) {
+        foundTargetPort = true;
+        return line;
+      }
+      console.warn(`⚠️  [Telemetry] Commenting out conflicting WWV_DB_PORT: ${line.trim()}`);
+      linesModified = true;
+      return `# ${line}`;
+    }
+
     return line;
   });
-  
-  if (!foundTargetActive) {
-    console.log(`🔌 [Telemetry] Injecting correct local DATABASE_URL for port ${port}.`);
-    newLines.push(``);
-    newLines.push(`# Dynamically injected by boot-db.mjs for worktree`);
-    newLines.push(targetUrl);
+
+  if (!foundTargetUrl || !foundTargetPort) {
+    console.log(`🔌 [Telemetry] Injecting local database settings for port ${port}.`);
+    newLines.push('');
+    newLines.push('# Dynamically injected by boot-db.mjs for worktree');
+    if (!foundTargetPort) newLines.push(targetPortLine);
+    if (!foundTargetUrl) newLines.push(targetUrlLine);
     linesModified = true;
   }
   
@@ -124,6 +139,18 @@ if (fs.existsSync(envPath)) {
 }
 
 
+/** @returns {number | null} Host port published for the db service, if running. */
+function getPublishedDbPort() {
+  try {
+    const out = execSync('docker compose port db 5432', { encoding: 'utf8' }).trim();
+    const match = out.match(/:(\d+)$/);
+    return match ? Number(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+
 console.log('🚀 Checking local PostgreSQL database...');
 
 try {
@@ -137,8 +164,15 @@ try {
   }
 
   // Start the db service and wait for it to be healthy
+  const publishedPort = getPublishedDbPort();
+  const needsRecreate = publishedPort !== null && publishedPort !== port;
+  if (needsRecreate) {
+    console.log(`🔁 Recreating database container (host port ${publishedPort} → ${port})...`);
+  }
+
   console.log('📦 Starting PostgreSQL via Docker Compose...');
-  execSync('docker compose up -d --wait db', { stdio: 'inherit' });
+  const upArgs = needsRecreate ? 'up -d --wait --force-recreate db' : 'up -d --wait db';
+  execSync(`docker compose ${upArgs}`, { stdio: 'inherit', env: process.env });
 
   console.log('✅ Local PostgreSQL database is ready!');
 

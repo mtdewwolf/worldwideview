@@ -7,8 +7,8 @@ paths:
 
 # Marketplace Architecture
 
-## 1. InstalledPluginsLoader
-Marketplace plugins are dynamically loaded via `InstalledPluginsLoader`. At startup, this service queries the PostgreSQL database (`installed_plugins` table) for dynamically installed manifests.
+## 1. useMarketplaceSync (client loader)
+Marketplace plugins are dynamically loaded via `useMarketplaceSync` in `AppShell`. When `hostReady` is true, the hook calls `GET /api/marketplace/load`, which reads the PostgreSQL `installed_plugins` table (and local dev plugins), seeds defaults on fresh installs, and returns manifests for client-side `loadPluginFromManifest()`.
 
 ## 2. Dynamic Bundle Loading
 Plugins from the marketplace use the `bundle` format and are imported at runtime from CDN endpoints (e.g., unpkg) via `loadPluginFromManifest()`.
@@ -25,7 +25,7 @@ Fresh installs (no rows in `InstalledPlugin`) auto-seed a starter set so the glo
 - **No hard-coded plugin lists.** Publishing a plugin to the verified registry is what makes it part of the fresh-install starter set.
 - **Idempotent**: a `defaults_seeded` row in the `Setting` table prevents re-runs. If the registry is unreachable on first attempt, the guard is NOT set — the next request retries.
 - **Existing instances** with `defaults_seeded=true` are untouched. To pull in newly-verified plugins, users install via the marketplace UI.
-- **Demo edition** uses an independent path (`NEXT_PUBLIC_DEMO_DEFAULT_PLUGINS` env var, handled in `AppShell.tsx` and `useMarketplaceSync.ts`) — not this seeder.
+- **Demo edition** uses an independent path (`NEXT_PUBLIC_DEMO_DEFAULT_PLUGINS` env var, handled in `useMarketplaceSync.ts`) — not this seeder.
 
 > [!CAUTION]
 > Do not reintroduce a static `DEFAULT_PLUGIN_IDS` constant or any other hard-coded plugin list. That drifted from npm reality, caused 404s for unpublished IDs, and conflated "verified" with "auto-installed."

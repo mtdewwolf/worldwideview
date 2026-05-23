@@ -63,7 +63,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm dev',
+    command: 'bun run dev',
     env: { PORT: '3001' },
     url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,

@@ -2,18 +2,17 @@
 FROM alpine AS extractor
 WORKDIR /app
 COPY . .
-RUN find . -type f \! -name 'package.json' \! -name 'pnpm-workspace.yaml' \! -name 'pnpm-lock.yaml' -delete && \
+RUN find . -type f \! -name 'package.json' \! -name 'bun.lock' \! -name 'bun.lockb' -delete && \
     find . -type d -empty -delete
 
 # Stage 1: Install ALL dependencies (needed for build)
-FROM node:26-alpine AS deps
-RUN npm install -g pnpm@9.15.0
+FROM oven/bun:1-alpine AS deps
 
 WORKDIR /app
 # Copy only the extracted package.jsons
 COPY --from=extractor /app ./
-# Install dependencies with cache mount for pnpm store
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
+# Install dependencies with cache mount for bun install cache
+RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
 
 
 # Stage 3: Build the application
@@ -35,7 +34,7 @@ ARG NEXT_PUBLIC_WWV_BUILD_ID
 ARG NEXT_PUBLIC_WWV_BUILD_AT
 
 # Run our pregenerate schema swap script and then generate Prisma client
-RUN NEXT_PUBLIC_WWV_EDITION=$NEXT_PUBLIC_WWV_EDITION pnpm run generate
+RUN NEXT_PUBLIC_WWV_EDITION=$NEXT_PUBLIC_WWV_EDITION bun run generate
 
 # Database migrations run at container startup via docker-entrypoint.sh
 # DATABASE_URL must be set to a PostgreSQL connection string
@@ -76,11 +75,11 @@ RUN set +e ; { \
     } > /app/.env.production.local
 
 # Run Next.js build with Webpack cache mounted
-RUN --mount=type=cache,target=/app/.next/cache NODE_OPTIONS="--max_old_space_size=3072" pnpm run build
+RUN --mount=type=cache,target=/app/.next/cache NODE_OPTIONS="--max_old_space_size=3072" bun run build
 RUN node scripts/copy-cesium.mjs
 
-# Deploy flattened production dependencies
-RUN pnpm --filter worldwideview deploy --prod /app/prod
+# Flatten production dependencies (replaces pnpm deploy --prod)
+RUN bun install --production --frozen-lockfile && mkdir -p /app/prod && cp -r node_modules /app/prod/
 
 # Stage 4: Production runner
 FROM node:26-alpine AS runner

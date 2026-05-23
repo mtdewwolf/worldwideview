@@ -7,6 +7,11 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         globals: true,
+        // Bun on Windows can hang forked Vitest workers before tests start.
+        ...(process.platform === 'win32' && {
+            pool: 'forks',
+            poolOptions: { forks: { singleFork: true } },
+        }),
         alias: {
             '@': path.resolve(__dirname, './src'),
         },
@@ -15,6 +20,7 @@ export default defineConfig({
             'src/core/**/*.{test,spec}.{js,ts,jsx,tsx}',
             'src/plugins/**/*.{test,spec}.{js,ts,jsx,tsx}',
             'src/app/**/*.{test,spec}.{js,ts,jsx,tsx}',
+            'src/components/**/__tests__/*.{test,spec}.{js,ts,jsx,tsx}',
             'packages/**/*.{test,spec}.{js,ts,jsx,tsx}',
         ],
         exclude: [

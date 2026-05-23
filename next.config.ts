@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["@prisma/client", "prisma"],
+  serverExternalPackages: ["@prisma/client", "prisma", "pg", "@prisma/adapter-pg"],
   transpilePackages: ["@worldwideview/wwv-plugin-sdk", "resium", "react-player", "satellite.js", "@worldwideview/wwv-plugin-fortiguard", "@worldwideview/wwv-plugin-nz-traffic-cameras"],
   allowedDevOrigins: process.env.ALLOWED_DEV_ORIGIN ? [process.env.ALLOWED_DEV_ORIGIN] : undefined,
   experimental: {
@@ -14,7 +14,8 @@ const nextConfig: NextConfig = {
     "/*": ["./scripts/**/*"],
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // Gated by CI `tsc --noEmit` job — do not re-enable ignoreBuildErrors without a clean typecheck.
+    ignoreBuildErrors: false,
   },
   async headers() {
     return [

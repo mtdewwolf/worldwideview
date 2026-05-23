@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { LayerPanel } from "@/components/panels/LayerPanel";
 import { EntityInfoCard } from "@/components/panels/EntityInfoCard";
 import { DataConfigPanel } from "@/components/panels/DataConfig";
@@ -16,7 +16,6 @@ import CameraStatsPanel from "@/components/panels/CameraStatsPanel";
 import { BottomPanelManager } from "@/components/layout/BottomPanelManager";
 import { TimelineSync } from "@/core/globe/TimelineSync";
 import { pluginManager } from "@/core/plugins/PluginManager";
-import { pluginRegistry } from "@/core/plugins/PluginRegistry";
 
 import { useStore } from "@/core/state/store";
 import { dataBus } from "@/core/data/DataBus";
@@ -33,8 +32,6 @@ import ReloadToast from "@/components/ui/ReloadToast";
 import ErrorToast from "@/components/ui/ErrorToast";
 import UnverifiedPluginBatchDialog from "@/components/marketplace/UnverifiedPluginBatchDialog";
 import { FeedbackDialog } from "@/components/common/FeedbackDialog";
-import { isDemo } from "@/core/edition";
-
 import { injectHostGlobals } from "@/core/plugins/hostGlobals";
 import { initLogCatcher } from "@/lib/logCatcher";
 import { MobileCameraStats } from "./MobileCameraStats";
@@ -42,6 +39,7 @@ import { MobileHudBar } from "./MobileHudBar";
 import { AgentBusSubscriber } from "./AgentBusSubscriber";
 import { DataBusSubscriber } from "./DataBusSubscriber";
 import { Header } from "./Header";
+import { NianticArDeepLink } from "@/components/niantic/NianticArDeepLink";
 
 const GlobeView = dynamic(() => import("@/core/globe/GlobeView"), {
     ssr: false,
@@ -54,12 +52,11 @@ const GlobeView = dynamic(() => import("@/core/globe/GlobeView"), {
  * Orchestrates the following:
  * 1. Theme hydration from localStorage.
  * 2. Injection of host globals for dynamic ES module plugins.
- * 3. Loading of marketplace and built-in plugins.
+ * 3. Plugin manager init; marketplace plugins load via useMarketplaceSync.
  * 4. Synchronization with the Cesium globe lifecycle.
  * 5. Managing the "Boot" animation sequence and HUD entry.
  */
 export function AppShell() {
-    const initLayer = useStore((s) => s.initLayer);
     const boot = useBootSequence();
     const isMobile = useIsMobile();
     const [bootStart] = useState(() => Date.now());
@@ -88,43 +85,7 @@ export function AppShell() {
             await injectHostGlobals();
             setHostReady(true);
 
-            // Fetch disabled built-in plugins before registration
-            let disabledIds = new Set<string>();
-            try {
-                const res = await fetch("/api/marketplace/disabled-builtins");
-                if (res.ok) {
-                    const data = await res.json();
-                    disabledIds = new Set<string>(data.disabledIds ?? []);
-                }
-            } catch {
-                // Non-critical — load all built-ins if endpoint fails
-            }
-
-            // Setup demo defaults
-            const demoDefaultPlugins = new Set<string>();
-            if (isDemo) {
-                const envVar = process.env.NEXT_PUBLIC_DEMO_DEFAULT_PLUGINS || "";
-                envVar.split(",").forEach((s) => {
-                    const clean = s.trim();
-                    if (clean) demoDefaultPlugins.add(clean);
-                });
-            }
-
             await pluginManager.init();
-
-            for (const plugin of pluginRegistry.getAll()) {
-                await pluginManager.registerPlugin(plugin);
-                let shouldEnable = false;
-                if (isDemo) {
-                    shouldEnable = demoDefaultPlugins.has(plugin.id);
-                } else {
-                    shouldEnable = !disabledIds.has(plugin.id);
-                }
-                initLayer(plugin.id, shouldEnable);
-                if (shouldEnable) {
-                    await pluginManager.enablePlugin(plugin.id);
-                }
-            }
 
             console.log("[AppShell] Platform Ready. Waiting for globe tiles...");
         };
@@ -155,7 +116,7 @@ export function AppShell() {
             pluginManager.destroy();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initLayer]);
+    }, []);
 
     // Boot-* classes drive entrance animations.
     // Once phase is "ready" we remove them so normal CSS
@@ -192,6 +153,9 @@ export function AppShell() {
         <TimelineSync />
         <DataBusSubscriber />
         <AgentBusSubscriber />
+        <Suspense fallback={null}>
+            <NianticArDeepLink />
+        </Suspense>
 
         <Header />
         {isMobile && <MobileHudBar />}

@@ -64,6 +64,22 @@ const toggleLayer = useStore((state) => state.layers.toggle);
 Whenever generating temporary debugging scripts, testing REST endpoints via `.mjs`, or dumping traces/JSON outputs, **save these exclusively inside `/local-scripts/`**. 
 - *Reference:* The root directory is strictly for production configuration files.
 
+### Niantic Spatial (optional)
+
+See [integrations/niantic-spatial.md](integrations/niantic-spatial.md). Key env vars: `NIANTIC_SPATIAL_API_KEY`, `NIANTIC_SPATIAL_USE_FIXTURES`, `NIANTIC_MESH_UPLOAD_SECRET`, `WWV_APP_URL`.
+
+### Mineral Mines static data
+
+The marketplace **Mineral Mines** plugin loads `GET /data/mineral_mines.geojson` from the host app (not from npm). Data is stored at `data/static/mineral_mines.geojson` and served by an App Route (never HTML 404). If missing, the route returns an empty GeoJSON collection and `predev` reminds you to generate data.
+
+Generate it once (Overpass API, ~48MB):
+
+```bash
+bun run data:mineral-mines
+```
+
+`predev` prints a reminder when the file is absent. The file is gitignored; regenerate after clone.
+
 ### Local Plugin & Seeder Testing
 When developing a custom seeder for a plugin, place the seeder directory inside `local-seeders/community/` or `local-seeders/private/`. The local `wwv-data-engine-v2` Docker container automatically mounts this folder and discovers scripts on startup, providing a seamless sandbox.
 

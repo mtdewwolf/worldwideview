@@ -122,6 +122,19 @@ describe("PluginManager.registerPlugin", () => {
     });
 });
 
+describe("PluginManager — WS-only plugins", () => {
+    it("does not call fetch on enable when polling interval is 0", async () => {
+        const fetchSpy = vi.fn(async () => [makeEntity("ws-1", "ws-only")]);
+        await pluginManager.registerPlugin(
+            makePlugin({ id: "ws-only", getPollingInterval: () => 0, fetch: fetchSpy }),
+        );
+
+        await pluginManager.enablePlugin("ws-only");
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
+});
+
 describe("PluginManager.enablePlugin", () => {
     it("flips enabled=true and emits layerToggled(true)", async () => {
         const layerHandler = vi.fn();

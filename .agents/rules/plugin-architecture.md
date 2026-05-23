@@ -12,6 +12,13 @@ paths:
 ## Purpose
 The standard operating procedure for instantiating, modifying, and registering a new data source plugin within the engine.
 
+## Niantic Spatial plugins
+
+- **Secrets:** `NIANTIC_SPATIAL_API_KEY` is server-only. Plugins must not embed it; use `/api/niantic/token` for AR clients.
+- **Coverage:** VPS sites are cached in Postgres (`NianticSiteCache`) or fixtures; there is no browser NSDK. Seeders call `/api/niantic/coverage`.
+- **Meshes:** Uploaded via `/api/niantic/mesh` (Unity companion). Render with `getGlobeComponent()` + `disableDefaultRendering`, not default `EntityRenderer` polygons.
+- **IDs:** `niantic-vps`, `niantic-mesh`, `niantic-ui` — see ADR-0004.
+
 ## The WorldPlugin Contract
 
 All data ingest flows through `WorldPlugin` (defined entirely within `@worldwideview/wwv-plugin-sdk`).
@@ -140,10 +147,11 @@ This is enforced by the TypeScript compiler. A `.ts` file with JSX will fail to 
 
 > [!NOTE]
 > All plugin interactions run through three singleton services:
-> `PluginRegistry` / `InstalledPluginsLoader` -> `PluginManager` -> `PollingManager` -> `DataBus`
+> `useMarketplaceSync` / `GET /api/marketplace/load` -> `PluginManager.loadFromManifest()` -> `PollingManager` -> `DataBus`
+> GeoJSON imports: `DataBus` `dynamicPluginCreate` -> `PluginManager` + `PluginRegistry`
 
-### `InstalledPluginsLoader`
-Scans the PostgreSQL database at startup for dynamically installed marketplace manifests. Parses, validates (`validateManifest`), and registers valid plugins via `pluginManager.loadFromManifest`.
+### Client-side marketplace sync
+At startup (and on window focus), `useMarketplaceSync` fetches installed plugin manifests from `/api/marketplace/load` (which seeds defaults on fresh installs). Each manifest is validated and loaded via `pluginManager.loadFromManifest()`. Plugins are enabled unless listed in the disabled set from `/api/marketplace/disabled-builtins` (demo edition uses `NEXT_PUBLIC_DEMO_DEFAULT_PLUGINS` instead).
 
 ### `PluginManager`
 The orchestrator. Exposes `registerPlugin`, `enablePlugin`, `disablePlugin`. Never bypass the manager to push data manually to the cache. Supports dynamic loading via `loadFromManifest`.
@@ -201,7 +209,7 @@ type PluginCapability =
 
 | Trust Tier | Who | Capabilities Allowed | How Determined |
 |---|---|---|---|
-| **Built-in** | Ships with WWV | All | Hardcoded in `AppShell` at build time |
+| **Built-in** | Ships with WWV | All | Loaded via marketplace seed or client-side dynamic creation (GeoJSON) |
 | **Verified** | WorldWideView-reviewed | Any declared capability | Plugin ID in the **signed registry** |
 | **Unverified** | Community / 3rd-party | `data:own`, `ui:settings` only | Plugin ID NOT in the registry |
 

@@ -1,6 +1,6 @@
 # Local Plugins
 
-This directory is a **pnpm workspace** for developing plugins locally without committing them to the main repository.
+This directory is a **Bun workspace** for developing plugins locally without committing them to the main repository.
 
 ## Quick Start
 
@@ -9,7 +9,7 @@ This directory is a **pnpm workspace** for developing plugins locally without co
 node packages/wwv-cli/dist/index.js create
 
 # Start dev server (auto-discovers local plugins)
-pnpm dev
+bun dev
 ```
 
 ## How It Works

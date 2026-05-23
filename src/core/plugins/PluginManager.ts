@@ -10,11 +10,17 @@ import { loadPluginFromManifest } from "@/core/plugins/loadPluginFromManifest";
 import { dataBus } from "@/core/data/DataBus";
 import { pollingManager } from "@/core/data/PollingManager";
 import { cacheLayer } from "@/core/data/CacheLayer";
-import { useStore } from "@/core/state/store";
-import { trackEvent } from "@/lib/analytics";
-import { resolveEngineUrl } from "@/core/data/resolveEngineUrl";
+import { collectPluginEnvVars, buildPluginContext } from "@/core/plugins/pluginConfigResolver";
 import { fetchLocalEngineManifest } from "@/core/data/engineManifest";
 import { pluginRegistry } from "@/core/plugins/PluginRegistry";
+import { useStore } from "@/core/state/store";
+
+/** Polling interval from plugin defaults and per-plugin store overrides. */
+function getEffectivePollingMs(pluginId: string, plugin: WorldPlugin): number {
+    const override = useStore.getState().dataConfig.pollingIntervals[pluginId];
+    if (override !== undefined && override !== null) return override;
+    return plugin.getPollingInterval();
+}
 
 /**
  * ManagedPlugin represents the internal state and instance of a registered data source.
@@ -88,81 +94,19 @@ class PluginManager {
             return;
         }
 
-        const envVars: Record<string, string> = {};
-        if (typeof process !== "undefined" && process.env) {
-            for (const [key, value] of Object.entries(process.env)) {
-                if (key.startsWith("NEXT_PUBLIC_WWV_PLUGIN_")) {
-                    envVars[key.replace("NEXT_PUBLIC_WWV_PLUGIN_", "")] = value || "";
-                }
-            }
-        }
-
-        // Next.js inlines `process.env.NEXT_PUBLIC_*` only at known static
-        // reference sites. The iteration above can come back empty in the
-        // browser bundle even when NEXT_PUBLIC_WWV_PLUGIN_* is set at build,
-        // because `Object.entries(process.env)` is not a static reference and
-        // the bundler doesn't expose every NEXT_PUBLIC_ key on the runtime
-        // object. Add explicit static references so the values reach plugin
-        // contexts. Add new known keys here as they're introduced.
-        // Format the raw engine URL to ensure it uses http/https for initial fetch calls
-        const rawEngineUrl = process.env.NEXT_PUBLIC_WWV_PLUGIN_DATA_ENGINE_URL;
-        const httpEngineUrl = rawEngineUrl 
-            ? rawEngineUrl.replace(/\/stream$/, "").replace(/^ws:\/\//, "http://").replace(/^wss:\/\//, "https://") 
-            : undefined;
-
-        const explicitVars: Record<string, string | undefined> = {
-            DATA_ENGINE_URL: httpEngineUrl,
-        };
-        for (const [k, v] of Object.entries(explicitVars)) {
-            if (v && !envVars[k]) envVars[k] = v;
-        }
-
-        const edition = (process.env.NEXT_PUBLIC_WWV_EDITION || "local") as "local" | "cloud" | "demo";
+        const envVars = collectPluginEnvVars();
 
         if (Object.keys(envVars).length > 0) {
             console.debug(`[PluginManager] Injected ${Object.keys(envVars).length} custom env vars into "${plugin.id}"`);
         }
 
-        const wsUrl = resolveEngineUrl(plugin.id);
-        const apiBaseUrl = wsUrl
-            .replace(/\/stream$/, "")
-            .replace(/^ws:\/\//, "http://")
-            .replace(/^wss:\/\//, "https://");
-
-        const context: PluginContext = {
-            apiBaseUrl,
-            getEngineUrl: () => {
-                const ws = resolveEngineUrl(plugin.id);
-                return ws.replace(/\/stream$/, "").replace(/^ws:\/\//, "http://").replace(/^wss:\/\//, "https://");
-            },
-            env: envVars,
-            edition,
-            timeRange: {
-                start: new Date(Date.now() - 24 * 60 * 60 * 1000),
-                end: new Date(),
-            },
-            onDataUpdate: (entities) => {
+        const context = buildPluginContext(
+            plugin,
+            envVars,
+            (entities) => {
                 this.handleDataUpdate(plugin.id, entities);
             },
-            onError: (error) => {
-                // "Failed to fetch" is a non-fatal best-effort HTTP cold-start pull
-                // that WS-native plugins attempt before the WebSocket delivers data.
-                // Downgrade to warn to avoid alarming noise; the WS pipeline handles
-                // actual data delivery independently.
-                const isNonFatalFetch =
-                    error instanceof TypeError && error.message === "Failed to fetch";
-                if (isNonFatalFetch) {
-                    console.warn("[Plugin:%s] Non-fatal initial fetch failed (WS will deliver data): %s", plugin.id, error.message);
-                    return;
-                }
-                console.error("[Plugin:%s]", plugin.id, error);
-                trackEvent("plugin-error", { plugin: plugin.id, error: error.message });
-                dataBus.emit("pluginError", { pluginId: plugin.id, message: `[${plugin.name || plugin.id}] ${error.message}`, error });
-            },
-            getPluginSettings: <T = unknown>(pluginId: string) => useStore.getState().dataConfig.pluginSettings[pluginId] as T | undefined,
-            isPlaybackMode: () => useStore.getState().isPlaybackMode,
-            getCurrentTime: () => useStore.getState().currentTime,
-        };
+        );
 
         this.plugins.set(plugin.id, {
             plugin,
@@ -178,18 +122,28 @@ class PluginManager {
         }
 
         // Emit an event that a plugin was registered so the external store can assign default polling intervals
+        const defaultInterval = typeof plugin.getPollingInterval === "function"
+            ? plugin.getPollingInterval()
+            : 0;
+
         dataBus.emit("pluginRegistered", {
             pluginId: plugin.id,
-            defaultInterval: plugin.getPollingInterval()
+            defaultInterval,
         });
 
         // Register polling
         pollingManager.register(
             plugin.id,
-            plugin.getPollingInterval(),
+            defaultInterval,
             async () => {
                 const managed = this.plugins.get(plugin.id);
                 if (!managed || !managed.enabled) return;
+
+                const effectiveMs = getEffectivePollingMs(plugin.id, plugin);
+                const playback = managed.context.isPlaybackMode?.() ?? false;
+                // WebSocket-only plugins (interval 0) must not hit REST on enable; WS delivers live data.
+                if (effectiveMs === 0 && !playback) return;
+
                 try {
                     const entities = await plugin.fetch(managed.context.timeRange);
                     this.handleDataUpdate(plugin.id, entities);

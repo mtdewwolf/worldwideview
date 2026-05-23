@@ -24,4 +24,5 @@ performance/
 tmp/
 *.geojson
 **/.pnpm-store
+**/.bun
 local-seeders*

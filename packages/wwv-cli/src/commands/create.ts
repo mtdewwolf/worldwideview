@@ -228,7 +228,7 @@ export default async function run(context) {
     }
 
     console.log(`\nNext steps:
-1. Run \`pnpm install\` from the project root.
+  1. Run \`bun install\` from the project root.
 2. Edit \`index.ts\` in your plugin directory.
 ${architecture === 'websocket' ? '3. Edit `seeder.mjs` in your local-seeders directory.' : ''}
 `);

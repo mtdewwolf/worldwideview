@@ -202,27 +202,13 @@ import { Plane } from "lucide-react";
 const iconUrl = createSvgIconUrl(Plane, { color: "#3b82f6" });
 ```
 
-### 1.5 Registration (3 Paths)
+### 1.5 Registration (2 Paths)
 
-**A. Built-in (monorepo package):**
+**A. Marketplace (database-installed):**
+`useMarketplaceSync` (mounted in `AppShell`) calls `GET /api/marketplace/load`, which reads `installed_plugins` and returns manifests. The hook calls `pluginManager.loadFromManifest()` for each manifest. No manual registration code needed.
 
-```typescript
-import { pluginRegistry } from "@/core/plugins/PluginRegistry";
-import { pluginManager } from "@/core/plugins/PluginManager";
-import WildfiresPlugin from "@worldwideview/wwv-plugin-wildfires";
-
-const plugin = new WildfiresPlugin();
-pluginRegistry.register(plugin);
-await pluginManager.registerPlugin(plugin);
-```
-
-`AppShell.tsx` iterates `pluginRegistry.getAll()` at startup.
-
-**B. Marketplace (database-installed):**
-`InstalledPluginsLoader` reads from the `installed_plugins` PostgreSQL table and calls `pluginManager.loadFromManifest()`. No code changes needed.
-
-**C. Dynamic import (runtime):**
-For user-imported GeoJSON layers, call `pluginManager.loadFromManifest(manifest)` directly.
+**B. Dynamic import (runtime):**
+For user-imported GeoJSON layers, `DataBus` emits `dynamicPluginCreate`, which registers via `PluginManager` and `PluginRegistry`.
 
 ### 1.6 Build Configuration (Core Monorepo Packages Only)
 

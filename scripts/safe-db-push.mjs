@@ -4,7 +4,7 @@ const dbUrl = process.env.DATABASE_URL || '';
 
 if (!dbUrl) {
   console.error("❌ ERROR: DATABASE_URL is missing.");
-  console.error("   Did you forget to run 'pnpm run setup' to generate your .env file?");
+  console.error("   Did you forget to run 'bun run setup' to generate your .env file?");
   process.exit(1);
 }
 
@@ -18,4 +18,4 @@ if (!isLocal) {
 }
 
 console.log("🔒 Local database detected. Safely running prisma db push...");
-execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
+execSync('bunx prisma db push --accept-data-loss', { stdio: 'inherit' });

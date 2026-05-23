@@ -58,4 +58,4 @@ writeFileSync(TARGET, content, "utf8");
 
 console.log("✅ .env created with generated AUTH_SECRET and ENCRYPTION_MASTER_KEY.");
 console.log("   Fill in any optional API keys (Cesium, Bing, OpenSky, etc.)");
-console.log("   then run: npm run dev");
+console.log("   then run: bun run dev");

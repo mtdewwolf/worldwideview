@@ -11,6 +11,7 @@ import {
   approveUnverifiedPlugin,
 } from "@/lib/marketplace/trustedPlugins";
 import { isDemo } from "@/core/edition";
+import { readJsonResponse } from "@/lib/safeJsonResponse";
 
 /**
  * Syncs marketplace-installed plugins on window focus.
@@ -31,8 +32,8 @@ export function useMarketplaceSync(hostReady: boolean) {
         try {
             const res = await fetch("/api/marketplace/disabled-builtins");
             if (res.ok) {
-                const data = await res.json();
-                initialDisabledIds.current = new Set<string>(data.disabledIds ?? []);
+                const data = await readJsonResponse<{ disabledIds?: string[] }>(res);
+                initialDisabledIds.current = new Set<string>(data?.disabledIds ?? []);
             } else {
                 initialDisabledIds.current = new Set();
             }
@@ -46,7 +47,8 @@ export function useMarketplaceSync(hostReady: boolean) {
         try {
             const res = await fetch("/api/marketplace/disabled-builtins");
             if (!res.ok) return;
-            const data = await res.json();
+            const data = await readJsonResponse<{ disabledIds?: string[] }>(res);
+            if (!data) return;
             const currentDisabled = new Set<string>(data.disabledIds ?? []);
 
             if (!initialDisabledIds.current) return;
@@ -84,6 +86,9 @@ export function useMarketplaceSync(hostReady: boolean) {
                     if (clean) demoDefaultPlugins.add(clean);
                 });
                 shouldEnable = demoDefaultPlugins.has(manifest.id);
+            } else {
+                await captureInitialDisabled();
+                shouldEnable = !initialDisabledIds.current?.has(manifest.id);
             }
 
             initLayer(manifest.id, shouldEnable);
@@ -106,14 +111,17 @@ export function useMarketplaceSync(hostReady: boolean) {
     async function syncMarketplacePlugins() {
         try {
             const res = await fetch("/api/marketplace/load");
-            const json = await res.json();
+            const json = await readJsonResponse<{ manifests?: PluginManifest[]; error?: string }>(res);
             console.debug(`[MarketplaceSync] Received marketplace manifest json`);
 
-            if (!res.ok) {
-                throw new Error(json.error || `Failed to fetch marketplace configuration (Status ${res.status})`);
+            if (!res.ok || !json) {
+                throw new Error(
+                    json?.error
+                    || `Failed to fetch marketplace configuration (Status ${res.status})`,
+                );
             }
 
-            const { manifests } = json as { manifests: PluginManifest[] };
+            const { manifests = [] } = json;
             const approved = getApprovedUnverifiedIds();
             const newPending: PluginManifest[] = [];
 

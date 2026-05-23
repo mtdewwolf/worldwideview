@@ -1,22 +1,22 @@
 Write-Host "[*] Setting up WorldWideView for Local Development..."
 
-# Check for pnpm
+# Check for bun
 try {
-    $null = Get-Command pnpm -ErrorAction Stop
+    $null = Get-Command bun -ErrorAction Stop
 } catch {
-    Write-Host "[Error] pnpm is not installed or not in PATH."
-    Write-Host "Please install it first: https://pnpm.io/installation"
+    Write-Host "[Error] bun is not installed or not in PATH."
+    Write-Host "Please install it first: https://bun.sh"
     exit 1
 }
 
 Write-Host "[*] Installing dependencies..."
-pnpm install
+bun install
 
 Write-Host "[*] Running initial setup (generating secrets)..."
-pnpm run setup
+bun run setup
 
 Write-Host "[*] Generating Prisma client..."
-npx prisma generate
+bunx prisma generate
 
 # Check for the sibling Data Engine repository
 if (-not (Test-Path "../wwv-data-engine")) {
@@ -30,7 +30,7 @@ if (-not (Test-Path "../wwv-data-engine")) {
     Write-Host "Full-Stack Mode: If you want to develop backend data seeders, you" -ForegroundColor Cyan
     Write-Host "must clone the open-source data engine as a sibling directory:" -ForegroundColor Cyan
     Write-Host "  cd ..; git clone https://github.com/silvertakana/wwv-data-engine"
-    Write-Host "  cd wwv-data-engine; pnpm install"
+    Write-Host "  cd wwv-data-engine; bun install"
     Write-Host "=====================================================================" -ForegroundColor Yellow
     Write-Host ""
 }
@@ -42,7 +42,7 @@ Write-Host ""
 Write-Host "WorldWideView uses PostgreSQL. Choose one option:" -ForegroundColor White
 Write-Host ""
 Write-Host "  Option A (Easiest): Run Prisma's built-in local database:" -ForegroundColor Green
-Write-Host "    npx prisma dev" -ForegroundColor Yellow
+Write-Host "    bunx prisma dev" -ForegroundColor Yellow
 Write-Host "    (Copy the DATABASE_URL it prints into your .env.local file)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  Option B: Use your own PostgreSQL or Supabase instance:" -ForegroundColor Green
@@ -51,5 +51,5 @@ Write-Host "====================================================================
 Write-Host ""
 
 Write-Host "[*] Starting local Next.js frontend server..."
-Write-Host "   (To run the data engine backends concurrently, run: pnpm dev:all)"
-pnpm run dev
+Write-Host "   (To run the data engine backends concurrently, run: bun run dev:all)"
+bun run dev

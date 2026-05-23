@@ -1,0 +1,25 @@
+{
+  "name": "@worldwideview/wwv-plugin-niantic-ui",
+  "version": "1.0.0",
+  "description": "Niantic Spatial sidebar controls and AR links",
+  "type": "module",
+  "scripts": {
+    "build": "echo \"Built via sync-local-plugins\""
+  },
+  "dependencies": {
+    "@worldwideview/wwv-plugin-sdk": "workspace:*"
+  },
+  "worldwideview": {
+    "pluginId": "niantic-ui",
+    "name": "Niantic Spatial",
+    "description": "Layer legend and AR handoff for Niantic VPS",
+    "icon": "MapPin",
+    "category": "utility",
+    "type": "extension",
+    "extends": ["sidebar"],
+    "capabilities": ["ui:sidebar"],
+    "author": "WorldWideView",
+    "dev_entry": "src/index.ts",
+    "format": "bundle"
+  }
+}

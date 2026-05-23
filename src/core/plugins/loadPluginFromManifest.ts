@@ -7,6 +7,8 @@
 import type { WorldPlugin } from "./PluginTypes";
 import type { PluginManifest } from "./PluginManifest";
 import { validateManifest } from "./validateManifest";
+import { ensureWorldPlugin } from "./ensureWorldPlugin";
+import { patchManifestEntry } from "./patchManifestEntry";
 
 /**
  * Custom error class for failures occurring during the plugin manifest loading process.
@@ -56,10 +58,14 @@ async function loadBundlePlugin(entry: string): Promise<WorldPlugin> {
     };
 
     if (module.default) {
+        const fromClass = instantiate(module.default);
+        if (fromClass) return fromClass;
+        if (typeof module.default === "object" && module.default !== null) {
+            return module.default as WorldPlugin;
+        }
         if (typeof module.default === "function") {
             return new module.default() as WorldPlugin;
         }
-        return module.default as WorldPlugin;
     }
 
     // Probe all named exports for a class implementation
@@ -95,6 +101,7 @@ async function loadBundlePlugin(entry: string): Promise<WorldPlugin> {
 export async function loadPluginFromManifest(
     manifest: PluginManifest,
 ): Promise<WorldPlugin> {
+    manifest = patchManifestEntry(manifest);
     const result = validateManifest(manifest);
     if (!result.valid) {
         console.error(
@@ -110,7 +117,8 @@ export async function loadPluginFromManifest(
     }
 
     try {
-        return await loadBundlePlugin(manifest.entry!);
+        const plugin = await loadBundlePlugin(manifest.entry!);
+        return ensureWorldPlugin(plugin, manifest);
     } catch (err) {
         if (err instanceof ManifestLoadError) throw err;
         throw new ManifestLoadError(

@@ -177,7 +177,7 @@ Quick map of the load-bearing modules:
 | Path | Role |
 |---|---|
 | [`src/core/plugins/PluginManager.ts`](../src/core/plugins/PluginManager.ts) | Core plugin registry. Instantiates plugins, calls `initialize()`, manages lifecycle. |
-| [`src/core/plugins/loaders/InstalledPluginsLoader.ts`](../src/core/plugins/loaders/InstalledPluginsLoader.ts) | Dynamic ES module loader for marketplace plugins (`import(/* webpackIgnore: true */ entry)`). |
+| [`src/core/hooks/useMarketplaceSync.ts`](../src/core/hooks/useMarketplaceSync.ts) | Client-side loader: fetches manifests from `/api/marketplace/load` and calls `loadPluginFromManifest()`. |
 | [`src/core/data/DataBus.ts`](../src/core/data/DataBus.ts) | Typed pub/sub singleton — the high-frequency event channel. |
 | [`src/core/data/WsClient.ts`](../src/core/data/WsClient.ts) | WebSocket router. Pipes engine `/stream` messages onto the DataBus. |
 | [`src/core/globe/GlobeView.tsx`](../src/core/globe/GlobeView.tsx) | The Cesium viewer container. Imagery layers, camera setup, primitive collection wiring. |

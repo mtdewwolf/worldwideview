@@ -252,7 +252,7 @@ function detectOrphanedRuleRefs() {
 // ─── Detector 6: Orphaned workspace packages ─────────────────────────────────
 function detectOrphanedPackages() {
   try {
-    const wsInfo = run('pnpm list --recursive --depth=0 --json 2>/dev/null');
+    const wsInfo = run('bun pm ls --all 2>/dev/null');
     if (!wsInfo) return;
     const pkgs = JSON.parse(wsInfo);
     const allNames = new Set(pkgs.map(p => p.name).filter(Boolean));
@@ -275,7 +275,7 @@ function detectOrphanedPackages() {
         });
       }
     }
-  } catch { /* skip if pnpm unavailable */ }
+  } catch { /* skip if bun unavailable */ }
 }
 
 // ─── Detector 7: Old Prisma migrations ───────────────────────────────────────
@@ -303,7 +303,7 @@ function detectOldMigrations() {
 // ─── Detector 8: Outdated dependencies ───────────────────────────────────────
 function detectOutdatedDeps() {
   if (!existsSync(join(ROOT, 'package.json'))) return;
-  const raw = run('pnpm outdated --no-color 2>/dev/null || true');
+  const raw = run('bun outdated 2>/dev/null || true');
   if (!raw) return;
   const dataLines = raw
     .split('\n')

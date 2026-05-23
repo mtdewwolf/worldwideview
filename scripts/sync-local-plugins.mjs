@@ -308,6 +308,13 @@ export function syncToPublic({ dir, manifest, pluginDir }, { quiet = false } = {
         entry: `/plugins-local/${publicName}/frontend.mjs`,
     };
 
+    if (manifest.extends) {
+        pluginJson.extends = manifest.extends;
+    }
+    if (manifest.streamUrl) {
+        pluginJson.dataSource = { streamUrl: manifest.streamUrl };
+    }
+
     fs.writeFileSync(
         path.join(targetDir, "plugin.json"),
         JSON.stringify(pluginJson, null, 2)

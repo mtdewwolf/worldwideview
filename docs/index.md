@@ -10,6 +10,7 @@ This documentation is organized into the following sections:
 - **[Plugin Guide](PLUGIN_GUIDE.md)**: Learn how to extend the platform with custom data layers and UI.
 - **[API Reference](API_REFERENCE.md)**: Detailed technical documentation for internal services (DataBus, Registry, etc.).
 - **[User Guide](USER_GUIDE.md)**: A comprehensive guide on how to use the WorldWideView application features.
+- **[Niantic Spatial](integrations/niantic-spatial.md)**: VPS sites, mesh overlays, and Unity AR companion.
 
 ## Quick Links
 

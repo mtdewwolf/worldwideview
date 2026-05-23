@@ -43,7 +43,15 @@ export async function fetchLocalEngineManifest(): Promise<string[] | null> {
 
     if (!res.ok) return null;
 
-    const data = await res.json();
+    const type = res.headers.get("content-type") ?? "";
+    if (!type.includes("json")) return null;
+
+    let data: { plugins?: string[] };
+    try {
+        data = await res.json();
+    } catch {
+        return null;
+    }
     localManifest = data.plugins || [];
     console.log(
       `[EngineManifest] Local engine detected: ${localManifest!.length} seeders`,

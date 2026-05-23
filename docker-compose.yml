@@ -23,6 +23,9 @@ services:
       - "AUTH_SECRET=${AUTH_SECRET:-default_secret_for_local_dev}"
       - "WWV_DEMO_ADMIN_SECRET=${WWV_DEMO_ADMIN_SECRET:-}"
       - "WWV_BRIDGE_TOKEN=${WWV_BRIDGE_TOKEN:-}"
+      - "NIANTIC_SPATIAL_API_KEY=${NIANTIC_SPATIAL_API_KEY:-}"
+      - "NIANTIC_SPATIAL_USE_FIXTURES=${NIANTIC_SPATIAL_USE_FIXTURES:-}"
+      - "WWV_APP_URL=${WWV_APP_URL:-http://host.docker.internal:3000}"
       - "DATABASE_URL=postgresql://postgres:postgres@db:5432/worldwideview?schema=public"
     depends_on:
       db:
@@ -70,6 +73,8 @@ services:
       - REDIS_URL=redis://wwv-redis:6379
       - SEEDERS_DIR=/app/seeders
       - DB_PATH=/app/data/engine.db
+      - WWV_APP_URL=${WWV_APP_URL:-http://host.docker.internal:3000}
+      - NIANTIC_SPATIAL_USE_FIXTURES=${NIANTIC_SPATIAL_USE_FIXTURES:-true}
     depends_on:
       wwv-redis:
         condition: service_healthy

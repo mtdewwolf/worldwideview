@@ -33,24 +33,34 @@ export function usePersistentDataSync() {
             }
         } else {
             fetch("/api/user/favorites")
-                .then((res) => {
-                    if (res.status === 401) return []; // Unauthenticated, safe to ignore
-                    if (res.ok) return res.json();
-                    throw new Error("Failed to load favorites");
+                .then(async (res) => {
+                    if (res.status === 401) return [];
+                    const contentType = res.headers.get("content-type") ?? "";
+                    if (!res.ok || !contentType.includes("application/json")) {
+                        console.warn("[GlobeView] Favorites unavailable:", res.status);
+                        return [];
+                    }
+                    return res.json();
                 })
                 .then((data) => {
                     if (Array.isArray(data)) {
-                        const mappedFavorites = data.map((item: any) => ({
-                            id: item.entityId, // Restore entity property matching
+                        const mappedFavorites = data.map((item: {
+                            entityId: string;
+                            pluginId: string;
+                            label: string;
+                            pluginName: string;
+                            lastSeen: string;
+                        }) => ({
+                            id: item.entityId,
                             pluginId: item.pluginId,
                             label: item.label,
                             pluginName: item.pluginName,
-                            lastSeen: new Date(item.lastSeen).getTime()
+                            lastSeen: new Date(item.lastSeen).getTime(),
                         }));
                         initFavorites(mappedFavorites);
                     }
                 })
-                .catch((err) => console.error("[GlobeView] Favorites fetch error:", err));
+                .catch((err) => console.warn("[GlobeView] Favorites fetch error:", err));
         }
     }, [initFavorites]);
 }

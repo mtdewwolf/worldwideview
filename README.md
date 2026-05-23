@@ -37,6 +37,7 @@ WorldWideView is a real-time geospatial engine visualizing live global data on a
 - **Advanced Entity Management**: Automatic horizon culling, chunked primitive rendering, and 3D stacking/spiderification.
 - **Marketplace Integration**: Download and sync new plugins directly from the UI.
 - **Agent Bus (opt-in)**: HTTP+SSE control surface that lets an external tool — typically an MCP server fronting an LLM — fly the globe, toggle layers, and select entities in the running browser session. Default off; see [Agent Bus docs](docs/agent-bus.md).
+- **Niantic Spatial (optional)**: VPS site layers on the globe plus Unity AR companion — see [Niantic integration](docs/integrations/niantic-spatial.md).
 
 ## Core Technologies
 
@@ -75,8 +76,8 @@ flowchart TD
 ## Prerequisites
 
 Before running the application, ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (v18+)
-- [pnpm](https://pnpm.io/) (v9+)
+- [Node.js](https://nodejs.org/) (v20+)
+- [Bun](https://bun.sh/) (v1+)
 - [Docker](https://www.docker.com/) (for self-hosting or full local dev)
 - PostgreSQL (or rely on the `coolify-db` / local compose container)
 
@@ -106,15 +107,15 @@ To run the source code locally for contributing or developing:
 ```bash
 git clone https://github.com/silvertakana/worldwideview.git
 cd worldwideview
-pnpm install
-pnpm run setup   # generates .env.local with AUTH_SECRET
-pnpm run dev:all # boots the UI, cache layers, and the data engine
+bun install
+bun run setup   # generates .env with AUTH_SECRET
+bun run dev:all # boots the UI, cache layers, and the data engine
 ```
 Visit `http://localhost:3000` to see the live globe.
 
 ## Project Structure
 
-The codebase utilizes a `pnpm` monorepo configuration:
+The codebase utilizes a Bun workspace monorepo configuration:
 
 ```text
 worldwideview/
@@ -152,7 +153,7 @@ WorldWideView is distributed across several specialized repositories:
 
 - **Branching & Commits:** We strictly enforce [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `refactor:`). Every commit should utilize our semantic versioning `[/commit]` workflow.
 - **Coding Standards:** We emphasize vanilla CSS (no Tailwind), strict TypeScript 5, and file modularity (max 150 lines per file).
-- **Testing:** We use Vitest with `jsdom`. All new core logic should be accompanied by tests, running via `pnpm test`.
+- **Testing:** We use Vitest with `jsdom`. All new core logic should be accompanied by tests, running via `bun test`.
 
 See [Docs: Development](docs/development.md) and [Docs: Testing](docs/testing.md) for more details.
 

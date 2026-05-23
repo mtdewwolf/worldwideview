@@ -7,7 +7,7 @@ import net from 'node:net';
 const branchName = process.argv[2];
 if (!branchName) {
   console.error('\x1b[31mError: Please provide a worktree branch name.\x1b[0m');
-  console.error('Usage: pnpm run test-worktree <branch-name>');
+  console.error('Usage: bun run test-worktree <branch-name>');
   process.exit(1);
 }
 
@@ -62,19 +62,19 @@ if (!fs.existsSync(worktreeEnvPath) && fs.existsSync(rootEnvPath)) {
 
 // 4. Install Dependencies
 console.log(`\x1b[34m[2/5] Symlinking modules and generating local clients...\x1b[0m`);
-console.log('Running pnpm install in worktree...');
-execSync('pnpm install', { cwd: worktreePath, stdio: 'inherit' });
+console.log('Running bun install in worktree...');
+execSync('bun install', { cwd: worktreePath, stdio: 'inherit' });
 
 console.log('Generating Prisma Clients (Root)...');
-execSync('npx prisma generate', { cwd: worktreePath, stdio: 'inherit' });
+execSync('bunx prisma generate', { cwd: worktreePath, stdio: 'inherit' });
 
 console.log('Generating Prisma Clients (Data Engine)...');
 const enginePath = path.join(worktreePath, 'packages', 'wwv-data-engine');
 if (fs.existsSync(enginePath)) {
   try {
-    execSync('npx prisma generate', { cwd: enginePath, stdio: 'inherit' });
+    execSync('bunx prisma generate', { cwd: enginePath, stdio: 'inherit' });
   } catch (err) {
-    console.warn('\x1b[33m[Warning] Could not generate Data Engine Prisma client. This happens on Windows when another workspace is running and locking the shared pnpm DLL. It is safe to ignore as the client already exists in the cache.\x1b[0m');
+    console.warn('\x1b[33m[Warning] Could not generate Data Engine Prisma client. This happens on Windows when another workspace is running and locking shared native modules. It is safe to ignore as the client already exists in the cache.\x1b[0m');
   }
 }
 
@@ -120,7 +120,7 @@ async function start() {
   
   // Start Backend First
   const backendEnv = { ...process.env, PORT: backendPort.toString() };
-  const backendProcess = spawn('pnpm', ['--filter', 'wwv-data-engine', 'dev'], {
+  const backendProcess = spawn('bun', ['--filter', 'wwv-data-engine', 'run', 'dev'], {
     cwd: worktreePath,
     env: backendEnv,
     stdio: 'pipe',
@@ -138,7 +138,7 @@ async function start() {
     NEXT_PUBLIC_WS_ENGINE_URL: `ws://127.0.0.1:${backendPort}/stream`
   };
 
-  const frontendProcess = spawn('pnpm', ['dev'], {
+  const frontendProcess = spawn('bun', ['run', 'dev'], {
     cwd: worktreePath,
     env: frontendEnv,
     stdio: 'pipe',

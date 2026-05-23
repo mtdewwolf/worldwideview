@@ -5,7 +5,7 @@
       "name": "Next.js: debug server-side",
       "type": "node-terminal",
       "request": "launch",
-      "command": "pnpm run dev",
+      "command": "bun run dev",
       "cwd": "${workspaceFolder}"
     },
     {
@@ -22,14 +22,14 @@
       "name": "WWV Data Engine: debug",
       "type": "node-terminal",
       "request": "launch",
-      "command": "pnpm --filter wwv-data-engine run dev",
+      "command": "bun --filter wwv-data-engine run dev",
       "cwd": "${workspaceFolder}"
     },
     {
       "name": "Full Stack: debug",
       "type": "node-terminal",
       "request": "launch",
-      "command": "pnpm run dev:all",
+      "command": "bun run dev:all",
       "cwd": "${workspaceFolder}"
     }
   ]

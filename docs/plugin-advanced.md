@@ -13,7 +13,7 @@ WorldWideView operates on a strict **Dynamic CDN Loaded (Bundle)** architecture.
 ### How Plugins Load
 1. A user clicks "Install" in the **Marketplace**.
 2. The marketplace sends the plugin manifest (containing an ES Module CDN URL, like `unpkg.com`) to the WorldWideView database.
-3. At runtime, the `InstalledPluginsLoader` dynamically fetches the JavaScript bundle.
+3. At runtime, `useMarketplaceSync` fetches manifests from `/api/marketplace/load` and dynamically imports the JavaScript bundle via `loadPluginFromManifest()`.
 4. The plugin is instantiated, and its `initialize(ctx)` method is invoked.
 
 ## Real-Time Data: Bring Your Own Backend (BYOB)

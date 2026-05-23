@@ -18,7 +18,7 @@ WorldWideView is a **real-time geospatial intelligence engine** visualizing live
 | Styling | Vanilla CSS — **no Tailwind** |
 | Database | PostgreSQL via Prisma 7 |
 | Auth | NextAuth v5 beta (Credentials provider, JWT sessions) |
-| Package Manager | pnpm (monorepo with `pnpm-workspace.yaml`) |
+| Package Manager | Bun (monorepo workspaces in `package.json`) |
 | Testing | Vitest + jsdom + React Testing Library |
 | Deployment | Docker multi-stage build → Coolify |
 
@@ -34,7 +34,7 @@ Agents MUST respect these at all times:
 - **Nine Zustand slices** under `src/core/state/`: access via `useStore` in React, `useStore.getState()` elsewhere.
 - **Primitive-based rendering**: Point/Billboard/Label/Polyline collections only. Never mix `size`/`outlineWidth`/`outlineColor` onto billboard entities — GPU silently clips.
 - **Three editions** via `NEXT_PUBLIC_WWV_EDITION` (`local` / `cloud` / `demo`); feature flags in `src/core/edition.ts`.
-- **Nested git clones**: `local-plugins/` (community plugins) and `local-seeders/community/` + `local-seeders/private/` (seeders) are **independent git repos cloned inside this repo, gitignored from it**. Each has its own remote. Run `git pull` inside each before editing; commits/pushes there go to their own upstream — not to `worldwideview`. See `.agents/context/ecosystem-repositories.md`.
+- **Nested git clones**: `local-plugins/` (community plugins) and `local-seeders/community/` + `local-seeders/private/` (seeders) are **independent git repos cloned inside this repo, gitignored from it**. Each has its own remote. Run `git pull` inside each before editing; commits/pushes there go to their own upstream — not to `worldwideview`. See [docs/deployment.md](docs/deployment.md) for ecosystem repo routing.
 
 ---
 
@@ -44,7 +44,7 @@ Agents MUST respect these at all times:
 - **Import aliases**: `@/*` → `./src/*`; `@worldwideview/wwv-plugin-sdk` → `./packages/wwv-plugin-sdk/src`
 - **CSS**: Vanilla CSS only. Global: `src/app/globals.css`. Scoped: CSS Modules. HUD: `src/styles/hud-animations.css`.
 - **Rendering entities**: Points use `type: "point"` + `size`/`outlineColor`/`outlineWidth`. Billboards use `type: "billboard"` + `iconUrl`/`iconScale`. NEVER mix.
-- **Plugin registration**: Built-ins via `AppShell.tsx` → `PluginRegistry` → `PluginManager`. Marketplace plugins via `InstalledPluginsLoader`.
+- **Plugin registration**: `AppShell` → `pluginManager.init()` + `useMarketplaceSync(hostReady)` → `GET /api/marketplace/load` → `pluginManager.loadFromManifest()`. GeoJSON imports via `DataBus` `dynamicPluginCreate` → `PluginManager` + `PluginRegistry`.
 - **Workspace**: Use `"workspace:*"` (not `"*"`) for internal deps. New `packages/` plugins need `transpilePackages` in `next.config.ts`.
 - **Temp files**: Save debugging scripts/outputs exclusively in `/local-scripts/` — never in root.
 - **Cleanliness**: Remove dead code, unused imports, debug `console.log` before finalising. Never use `any` or `@ts-ignore`. Never create `.mdc` files.
@@ -65,21 +65,21 @@ Agents MUST respect these at all times:
 
 ## 6. Environment & Configuration
 
-See `.agents/context/environment-config.md` for required environment variables and secrets.
+See [docs/development.md](docs/development.md) and [docs/deployment.md](docs/deployment.md) for required environment variables and secrets.
 
 ---
 
 ## 7. Development & Deployment
 
 ```bash
-pnpm dev          # Frontend only (auto-runs prisma db push + copy-cesium)
-pnpm dev:all      # Frontend + data engine via Docker Compose
-pnpm build        # Production build
-pnpm test         # Vitest
-pnpm db:reset     # Wipe + re-migrate DB (destructive)
+bun dev          # Frontend only (auto-runs prisma db push + copy-cesium)
+bun dev:all      # Frontend + data engine via Docker Compose
+bun build        # Production build
+bun test         # Vitest
+bun db:reset     # Wipe + re-migrate DB (destructive)
 ```
 
-See `.agents/context/` → [deployment and testing details in `.agents/rules/deployment-and-testing.md`] for Docker architecture, Coolify rules, and CSP headers.
+See [`.agents/rules/deployment-and-testing.md`](.agents/rules/deployment-and-testing.md) for Docker architecture, Coolify rules, and CSP headers.
 
 ---
 
@@ -95,7 +95,7 @@ These load automatically when you read/edit files matching their paths:
 | `.agents/rules/marketplace-architecture.md` | `src/lib/marketplace/**`, `src/app/api/marketplace/**` |
 | `.agents/rules/cloud-auth-architecture.md` | `src/lib/auth*`, `src/app/api/auth/**`, `src/core/auth.ts` |
 | `.agents/rules/database-migrations.md` | `prisma/**` |
-| `.agents/rules/monorepo-workflow.md` | `packages/**`, `pnpm-workspace.yaml`, `local-plugins/**` |
+| `.agents/rules/monorepo-workflow.md` | `packages/**`, `package.json` workspaces, `local-plugins/**` |
 | `.agents/rules/data-engine-architecture.md` | `packages/**`, `local-seeders/**`, `docker-compose.yml` |
 | `.agents/rules/deployment-and-testing.md` | `Dockerfile`, `docker-compose.yml`, `.github/**`, `next.config.ts` |
 | `.agents/rules/e2e-testing.md` | `tests/**`, `public/e2e-fixtures/**`, `playwright.config.ts` |
@@ -104,18 +104,18 @@ These load automatically when you read/edit files matching their paths:
 
 ## 9. On-Demand Context (read explicitly when needed)
 
-See `.agents/context/INDEX.md` for the full navigation table. Key files:
+See [docs/index.md](docs/index.md) for the documentation navigation table. Key files:
 
 | When to read | File |
 |---|---|
-| Product vision, business model, Edition system | `.agents/context/platform-architecture.md` |
-| Finding files, repo layout | `.agents/context/directory-structure.md` |
-| Routing fix to correct repository | `.agents/context/ecosystem-repositories.md` |
-| Next.js, data pipeline, Redis, DB schema | `.agents/context/application-architecture.md` |
-| Debugging plugin data, namespace collisions | `.agents/context/troubleshooting-and-debugging.md` |
-| SSH, Coolify MCP | `.agents/context/server-management.md` |
-| Coding principles, Definition of Done | `.agents/context/coding-principles.md` |
-| `.env` variables and secrets | `.agents/context/environment-config.md` |
+| Product vision, business model, Edition system | [docs/project-overview.md](docs/project-overview.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Finding files, repo layout | [docs/files.md](docs/files.md) |
+| Next.js, data pipeline, Redis, DB schema | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| `.env` variables and secrets | [docs/development.md](docs/development.md), [docs/deployment.md](docs/deployment.md) |
+| Feature flags and editions | [docs/feature-flags.md](docs/feature-flags.md) |
+| Agent Bus (opt-in control surface) | [docs/agent-bus.md](docs/agent-bus.md) |
+
+> Optional extended reference docs may exist locally in `.agents/context/` (gitignored, not versioned).
 
 ---
 
@@ -151,7 +151,7 @@ See `.agents/context/INDEX.md` for the full navigation table. Key files:
 ## 12. Pull Request & Commit Guidelines
 
 - **Commit format**: Conventional Commits (`feat:`, `fix:`, `refactor:`, `perf:`). Use `/commit` workflow.
-- **Required checks**: `pnpm test` and `pnpm build` must pass before merge.
+- **Required checks**: `bun test` and `bun build` must pass before merge.
 - **Review**: Use `/pr-review` for comprehensive multi-role review.
 - **Worktrees**: Use `git-wt switch --create <branch>` and `git-wt remove` (never `rm -rf` a worktree — orphans the PostgreSQL Docker volume).
 
@@ -161,4 +161,4 @@ See `.agents/context/INDEX.md` for the full navigation table. Key files:
 
 > **Always interface-based, extensible, composable, modular. Never band-aids on band-aids.**
 
-Read `.agents/context/coding-principles.md` before any non-trivial code change.
+Follow the conventions in §4 and read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before any non-trivial code change.

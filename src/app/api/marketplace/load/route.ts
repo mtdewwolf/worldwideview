@@ -4,17 +4,39 @@ import path from "path";
 import { prisma } from "@/lib/db";
 import { handlePreflight, withCors } from "@/lib/marketplace/cors";
 import { validateManifest } from "@/core/plugins/validateManifest";
+import { patchManifestEntry } from "@/core/plugins/patchManifestEntry";
 import { validateMarketplaceAuth } from "@/lib/marketplace/auth";
 import type { PluginManifest } from "@/core/plugins/PluginManifest";
 import { getVerifiedPluginIds } from "@/lib/marketplace/registryClient";
 
-import { isDemo, isDemoAdmin } from "@/core/edition";
+import { isDemo, isDemoAdmin, isLocal } from "@/core/edition";
 import { auth } from "@/lib/auth";
 import { seedDefaultPlugins } from "@/lib/marketplace/seedDefaultPlugins";
 import * as Sentry from "@sentry/nextjs";
 
 export async function OPTIONS(request: Request) {
     return handlePreflight(request);
+}
+
+/** Prefer local bundle paths when DB install and plugins-local both expose the same id. */
+function dedupeManifestsById(manifests: PluginManifest[]): PluginManifest[] {
+    const score = (m: PluginManifest): number => {
+        const entry = m.entry ?? "";
+        if (entry.startsWith("/plugins-local/")) return 3;
+        if (entry.startsWith("/")) return 2;
+        if (entry.startsWith("http")) return 1;
+        return 0;
+    };
+
+    const byId = new Map<string, PluginManifest>();
+    for (const m of manifests) {
+        if (!m.id) continue;
+        const prev = byId.get(m.id);
+        if (!prev || score(m) > score(prev)) {
+            byId.set(m.id, m);
+        }
+    }
+    return [...byId.values()];
 }
 
 /**
@@ -29,8 +51,8 @@ export async function GET(request: Request) {
     // Seed default plugins on fresh installs (idempotent — runs once)
     await seedDefaultPlugins();
 
-    // On demo, all installed plugins are visible to everyone (admin vetted them)
-    if (!isDemo) {
+    // Demo and local editions allow marketplace sync without a session (local dev + plugins-local).
+    if (!isDemo && !isLocal) {
         const authError = await validateMarketplaceAuth(request);
         if (authError) return withCors(authError, request);
     }
@@ -69,23 +91,37 @@ export async function GET(request: Request) {
         const manifests = allRecords
             .map((r: any): PluginManifest | null => {
                 try {
-                    const manifest = JSON.parse(r.config);
+                    let manifest = JSON.parse(r.config) as PluginManifest;
                     if (!manifest.id) manifest.id = r.pluginId;
+                    manifest = patchManifestEntry(manifest);
 
-                    return manifest as PluginManifest;
+                    return manifest;
                 } catch {
                     return null;
                 }
             })
             .filter((m: any): m is PluginManifest => {
                 if (!m) return false;
-                // Skip built-in plugins — already registered by AppShell
+                // Skip built-in trust tier; these use client-side dynamic creation (GeoJSON importer)
                 if (m.trust === "built-in") return false;
 
                 // Skip stale/malformed records (e.g. old empty-config installs for built-ins)
                 // If it lacks basic required fields, it's a legacy record and we drop it silently
                 // to avoid log spam on every poll.
                 if (!m.entry || !m.name || !m.version) return false;
+
+                // Skip ISS installs pointing at removed @nullptr1945 unpkg builds (no local fallback)
+                if (
+                    m.id === "iss"
+                    && m.entry.includes("@nullptr1945/wwv-plugin-iss")
+                    && !m.entry.startsWith("/plugins-local/")
+                ) {
+                    console.warn(
+                        "[Marketplace/load] Skipping ISS: CDN bundle missing. "
+                        + "Build local-plugins/wwv-plugin-iss or uninstall ISS from marketplace.",
+                    );
+                    return false;
+                }
 
                 // Skip bundle plugins whose entry is a bare module specifier
                 // (e.g. "camera") — cannot be dynamically imported in the browser.
@@ -138,7 +174,9 @@ export async function GET(request: Request) {
             }
         }
 
-        return withCors(NextResponse.json({ manifests }), request);
+        const deduped = dedupeManifestsById(manifests);
+
+        return withCors(NextResponse.json({ manifests: deduped }), request);
     } catch (err) {
         console.error("[Marketplace/load] Error:", err);
         return withCors(NextResponse.json({ manifests: [] }), request);

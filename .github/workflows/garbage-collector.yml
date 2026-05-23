@@ -52,17 +52,12 @@ jobs:
           git config user.name 'WorldWideView GC Bot'
           git config user.email 'gc-bot@users.noreply.github.com'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          bun-version: 1.3.10
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Run deterministic scan
         run: |

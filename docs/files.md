@@ -14,7 +14,7 @@ The system is highly modularized to separate React UI rendering from heavy Cesiu
 - `src/core/state/store.ts` - The primary Zustand state registry exporting all nine discrete slices (`globe`, `layers`, `timeline`, `ui`, `filter`, `data`, `config`, `favorites`, `geojson`).
 
 ## Platform Implementation
-- `src/core/plugins/loaders/InstalledPluginsLoader.ts` - Platform-specific loader that dynamically injects ES module CDNs via `import(/* webpackIgnore: true */)`.
+- `src/core/hooks/useMarketplaceSync.ts` - Client-side loader that fetches manifests from `/api/marketplace/load` and dynamically imports ES module bundles via `loadPluginFromManifest()`.
 - `src/core/globe/hooks/useCameraActions.ts` - Abstraction connecting React UI logic to raw CesiumJS camera math (flyTo, lookAt).
 - `src/lib/edition.ts` - Platform edition configuration. Exposes runtime feature flags for `local`, `cloud`, and `demo` deployments.
 

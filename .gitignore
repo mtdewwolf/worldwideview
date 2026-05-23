@@ -34,6 +34,9 @@ gc-findings.json
 
 # scripts (tracked, but temporary scratchpads should go in /local-scripts/)
 
+# Generated OSM dataset for Mineral Mines plugin (~48MB; run bun run data:mineral-mines)
+/data/static/mineral_mines.geojson
+
 
 # local database
 /data/
@@ -76,6 +79,12 @@ next-env.d.ts
 
 # Plugin build artifacts
 packages/*/dist/
+
+# Unity AR companion (apps/wwv-ar-unity)
+apps/wwv-ar-unity/Library/
+apps/wwv-ar-unity/Temp/
+apps/wwv-ar-unity/Logs/
+apps/wwv-ar-unity/UserSettings/
 
 # Reference Reference Codebases
 /worldmonitor/

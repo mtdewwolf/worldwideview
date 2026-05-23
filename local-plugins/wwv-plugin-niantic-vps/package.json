@@ -1,0 +1,24 @@
+{
+  "name": "@worldwideview/wwv-plugin-niantic-vps",
+  "version": "1.0.0",
+  "description": "Niantic Spatial VPS site coverage on the globe",
+  "type": "module",
+  "scripts": {
+    "build": "echo \"Built via sync-local-plugins\""
+  },
+  "dependencies": {
+    "@worldwideview/wwv-plugin-sdk": "workspace:*"
+  },
+  "worldwideview": {
+    "pluginId": "niantic-vps",
+    "name": "Niantic VPS Sites",
+    "description": "Visual Positioning System public sites near the camera view",
+    "icon": "MapPin",
+    "category": "intelligence",
+    "capabilities": ["data:own", "globe:overlay", "ui:detail-panel"],
+    "streamUrl": "wss://dataenginev2.worldwideview.dev/stream",
+    "author": "WorldWideView",
+    "dev_entry": "src/index.ts",
+    "format": "bundle"
+  }
+}

@@ -102,3 +102,15 @@ model MarketplaceCredential {
   @@unique([tenantId])
   @@map("marketplace_credentials")
 }
+
+model NianticSiteCache {
+  siteId    String   @id
+  lat       Float
+  lng       Float
+  name      String?
+  meshPath  String?
+  metadata  Json     @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@map("niantic_site_cache")
+}

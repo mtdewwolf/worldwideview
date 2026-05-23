@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4194, 37.7749] },
+      "properties": {
+        "type": "niantic-vps-site",
+        "siteId": "fixture-sf-pier",
+        "name": "SF Fixture Site",
+        "lat": 37.7749,
+        "lng": -122.4194,
+        "imageUrl": "",
+        "hasMesh": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1276, 51.5074] },
+      "properties": {
+        "type": "niantic-vps-site",
+        "siteId": "fixture-london-eye",
+        "name": "London Fixture Site",
+        "lat": 51.5074,
+        "lng": -0.1276,
+        "hasMesh": false
+      }
+    }
+  ]
+}
